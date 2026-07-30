@@ -10,6 +10,7 @@
 import { ObjectId } from "mongodb";
 import { collections, ensureIndexes } from "../src/lib/db/client";
 import { hashCode, hashAnswer, normaliseCode } from "../src/lib/auth/session";
+import { teamNameKey } from "../src/lib/ctf/join";
 import { randomBytes } from "node:crypto";
 
 function makeCode(): string {
@@ -37,7 +38,8 @@ async function main() {
 
   for (const name of ["Team Arachnid", "Team Multiverse"]) {
     const teamId = new ObjectId();
-    await teams.insertOne({ _id: teamId, name, createdAt: new Date() });
+    // nameKey carries the unique index that arbitrates the CTF's open join.
+    await teams.insertOne({ _id: teamId, name, nameKey: teamNameKey(name), createdAt: new Date() });
 
     const participantId = new ObjectId();
     await participants.insertOne({
@@ -68,7 +70,7 @@ async function main() {
   }
 
   console.log("Seeding challenges…");
-  await challenges.deleteMany({ slug: { $in: ["clue-1", "clue-2", "warmup", "q1", "sum-two"] } });
+  await challenges.deleteMany({ slug: { $in: ["clue-1", "clue-2", "q1", "sum-two"] } });
   await challenges.insertMany([
     {
       type: "hunt",
@@ -88,15 +90,9 @@ async function main() {
       closesAt: null,
       config: { answerHash: hashAnswer("rooftop"), hintCosts: [15] },
     },
-    {
-      type: "ctf",
-      slug: "warmup",
-      title: "Warmup",
-      points: 200,
-      opensAt: null,
-      closesAt: null,
-      config: { answerHash: hashAnswer("flag{hello_multiverse}"), firstBloodBonus: 50 },
-    },
+    // NOTE: no ctf challenge here. The CTF owns its own content and unlock
+    // chain — see scripts/seed-ctf.ts. Seeding one from here would be deleted
+    // by that script anyway, and a half-seeded round breaks the gate.
     {
       type: "quiz",
       slug: "q1",
@@ -120,7 +116,7 @@ async function main() {
   console.log("\n── ACCESS CODES (shown once, stored hashed) ─────────────");
   for (const i of issued) console.log(`  ${i.team.padEnd(18)} ${i.code}`);
   console.log("────────────────────────────────────────────────────────\n");
-  console.log("Try: hunt clue-1 → 'library' · ctf warmup → 'flag{hello_multiverse}' · quiz q1 → '2|<servedAtISO>'");
+  console.log("Try: hunt clue-1 → 'library' · quiz q1 → '2|<servedAtISO>'  ·  CTF: run npm run seed:ctf");
 
   process.exit(0);
 }

@@ -7,10 +7,29 @@ import type { EventKey, SubmissionStatus } from "@/lib/config";
  * which a 500-person burst walks straight into. Mongo handles hundreds.
  */
 
+/**
+ * A team.
+ *
+ * `name` carries a UNIQUE index, which is what makes the open join safe to
+ * race: two people typing the same name in the same instant means one insert
+ * wins and the other gets a duplicate-key error to show as "that name is
+ * taken". Checking first and inserting second would let both through.
+ */
 export interface Team {
   _id?: ObjectId;
   name: string;
+  /** Case- and space-insensitive form of `name`; the uniqueness is on this. */
+  nameKey: string;
   createdAt: Date;
+  /**
+   * ctf: when this team pressed Start. Null until they do.
+   *
+   * The clock is PER TEAM, not shared, so a team that joins ten minutes late is
+   * not ten minutes behind — their elapsed time is measured from here. Written
+   * exactly once, by a conditional update that only matches while it is null,
+   * so a double-click cannot restart anybody's run.
+   */
+  startedAt?: Date | null;
 }
 
 export interface Participant {
@@ -60,8 +79,20 @@ export interface Challenge {
     limitSeconds?: number;
     /** quiz: bonus for answering fast, scaled by time remaining. */
     speedBonus?: number;
-    /** ctf: extra points for the first team to solve. */
-    firstBloodBonus?: number;
+    /**
+     * ctf: which difficulty section this belongs to (1 easy, 2 medium, 3 hard)
+     * and its position within it. `order` is DISPLAY ORDER — nothing unlocks.
+     * Points come from the section, not from the challenge document — see
+     * lib/ctf/sections.ts.
+     */
+    section?: number;
+    order?: number;
+    /**
+     * ctf: blob names of downloadable files, NOT URLs. A stored URL either
+     * expires or never expires; both are wrong. The name is stable and the
+     * signed URL is minted per request with a short expiry.
+     */
+    attachments?: string[];
     /** code: reference to the hidden test bundle in blob storage. */
     testsRef?: string;
   };
@@ -125,5 +156,13 @@ export interface LeaderboardSnapshot {
     teamName: string;
     points: number;
     lastScoreAt: Date | null;
+    /**
+     * ctf only. How many questions the team has solved and how long their run
+     * took, so equal scores can be separated by speed. Optional because the
+     * other three events have no such notion — their rows are unchanged.
+     */
+    solved?: number;
+    elapsedMs?: number | null;
+    finished?: boolean;
   }>;
 }

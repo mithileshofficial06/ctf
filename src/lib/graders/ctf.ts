@@ -1,42 +1,63 @@
+import { ObjectId } from "mongodb";
 import { hashAnswer } from "@/lib/auth/session";
-import { collections } from "@/lib/db/client";
+import { sectionLayout } from "@/lib/ctf/content";
+import { readTeamStart, teamSolveTimes } from "@/lib/ctf/run";
+import { computeRun, gateSubmission } from "@/lib/ctf/sections";
 import type { GradeInput, GradeResult } from "./types";
 
 /**
- * CTF — hashed flag compare, plus a first-blood bonus for the first team.
+ * CTF — run gate, then hashed flag compare, then the section's flat rate.
  *
- * First blood is decided by the SERVER receipt timestamp, and awarded only if
- * no earlier correct submission exists for this challenge. Two teams landing
- * in the same millisecond is the interesting case: the ledger is append-only
- * and this check reads committed submissions, so at worst the bonus is
- * awarded once per distinct earlier-solve set. Tighten to a conditional
- * update on a `firstBloodTeamId` field if the event needs a hard guarantee.
+ * THE GATE RUNS BEFORE THE COMPARE, and that order matters. A team that has not
+ * started must not be able to discover whether a flag is correct by watching
+ * which error comes back, and a question already solved must not pay twice. The
+ * board never draws a submit box in either case, so anything reaching here past
+ * the gate came from curl or a stale tab — and it is refused with the reason,
+ * not silently.
+ *
+ * Points are FIXED at this instant and never recomputed, so the ledger row stays
+ * true and the leaderboard is a plain sum.
  */
 export async function gradeCtf(input: GradeInput): Promise<GradeResult> {
   const { challenge, teamId, payload, receivedAt } = input;
-  const subs = await collections.submissions();
 
-  const alreadySolved = await subs.findOne({
-    challengeId: challenge._id,
-    teamId,
-    "verdict.correct": true,
+  // This team's start and their correct solves — the same inputs the board and
+  // their own page use, so all three agree about where they stand.
+  const [startedAt, solvedAt] = await Promise.all([
+    readTeamStart(String(teamId)),
+    teamSolveTimes(teamId as ObjectId),
+  ]);
+
+  const run = computeRun({
+    startedAt,
+    layout: sectionLayout(),
+    solvedAt,
+    now: receivedAt,
   });
-  if (alreadySolved) return { correct: false, points: 0, meta: { reason: "already-solved" } };
 
-  if (hashAnswer(payload) !== challenge.config.answerHash) {
-    return { correct: false, points: 0 };
+  const gate = gateSubmission(run, challenge.slug);
+  if (!gate.allowed) {
+    return { correct: false, points: 0, meta: { reason: gate.reason, section: gate.section } };
   }
 
-  const earlier = await subs.findOne(
-    { challengeId: challenge._id, "verdict.correct": true, receivedAt: { $lt: receivedAt } },
-    { projection: { _id: 1 } }
-  );
-  const firstBlood = !earlier;
-  const bonus = firstBlood ? challenge.config.firstBloodBonus ?? 0 : 0;
+  if (hashAnswer(payload) !== challenge.config.answerHash) {
+    return { correct: false, points: 0, meta: { section: gate.section.section } };
+  }
+
+  // One question short of the full set, and this is the one closing the gap.
+  const clearsEvent = run.totalSolved + 1 === run.totalQuestions;
 
   return {
     correct: true,
-    points: challenge.points + bonus,
-    meta: { firstBlood, bonus },
+    points: gate.section.points,
+    meta: {
+      section: gate.section.section,
+      sectionName: gate.section.name,
+      solved: run.totalSolved + 1,
+      total: run.totalQuestions,
+      // True when this solve completes the event — the UI turns it into "that's
+      // all eight, your clock has stopped" rather than another "+200".
+      clearsEvent,
+    },
   };
 }

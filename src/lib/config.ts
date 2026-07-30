@@ -33,6 +33,16 @@ export const SESSION_TTL_SECONDS = 60 * 60 * 24;
  */
 export const LEADERBOARD_REFRESH_MS = 5_000;
 
+/**
+ * Longest team name accepted at the CTF's open join.
+ *
+ * Lives here rather than beside the join logic because the form needs it too,
+ * and `lib/ctf/join.ts` imports the Mongo driver — importing that constant into
+ * a client component would pull the entire database driver into the browser
+ * bundle. This module is client-safe by construction.
+ */
+export const MAX_TEAM_NAME = 32;
+
 /** Hard caps on what a single submission may carry. */
 export const LIMITS = {
   /** Source files for the code event. Anything larger is a mistake or abuse. */

@@ -6,9 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "tsx --test \"src/**/*.test.ts\"",
+    "seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts",
+    "seed:ctf": "tsx --env-file-if-exists=.env.local scripts/seed-ctf.ts",
+    "upload:ctf": "tsx --env-file-if-exists=.env.local scripts/upload-ctf-files.ts"
   },
   "dependencies": {
+    "@azure/storage-blob": "^12.33.0",
     "jose": "^6.2.4",
     "mongodb": "^7.5.0",
     "next": "16.2.11",
