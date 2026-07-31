@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/auth/guard";
 import { loadCtfState } from "@/lib/ctf/state";
 import CtfBoard from "./CtfBoard";
+import { Skyline, Spider } from "./icons";
 import "./ctf.css";
 
 /**
@@ -27,14 +28,19 @@ export default async function CtfPage() {
     <main className="bru">
       <div className="bru-wrap">
         <header className="bru-header">
-          <div>
-            <p className="bru-kicker">Xplore&apos;26 · LICET</p>
-            <h1 className="bru-title">
-              Capture
-              <br />
-              the Flag
-            </h1>
+          {/* Slot for the organiser's own hero art; the emblem stands in for now. */}
+          <div className="bru-art-slot" aria-hidden="true" />
+
+          <div className="bru-brand">
+            <span className="bru-brand-mark">
+              <Spider size={34} />
+            </span>
+            <div>
+              <h1 className="bru-title">X-Plore 26</h1>
+              <p className="bru-brand-sub">CTF Challenge</p>
+            </div>
           </div>
+
           <div className="bru-id">
             {initial.team ? (
               <>
@@ -52,6 +58,11 @@ export default async function CtfPage() {
         </header>
 
         <CtfBoard initial={initial} />
+
+        <footer className="bru-footer">
+          <span className="bru-graffiti">Spider-Verse</span>
+          <Skyline className="bru-skyline" />
+        </footer>
       </div>
     </main>
   );

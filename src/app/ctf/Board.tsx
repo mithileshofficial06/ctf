@@ -12,16 +12,17 @@ import { formatDuration } from "./CtfBoard";
  * the board is how an argument starts.
  *
  * Ordering — points, then the SHORTER run — is decided server-side in
- * lib/ctf/board.ts and simply drawn here.
+ * lib/ctf/board.ts and simply drawn here. The top three get a medal rank; rank
+ * is shown as a number too, never colour alone.
  */
 export default function Board({ state }: { state: CtfStatePayload }) {
   const rows = state.standings;
   const you = state.team?.teamId ?? null;
 
   return (
-    <div className="bru-box">
+    <>
       <div className="bru-board-head">
-        <h2 className="bru-h2">Board</h2>
+        <h2 className="bru-h2">Leaderboard</h2>
         <span className="bru-live">
           <span className="bru-dot" aria-hidden="true" />
           Live
@@ -33,7 +34,7 @@ export default function Board({ state }: { state: CtfStatePayload }) {
 
         {rows.map((row, i) => (
           <div key={row.teamId} className={`bru-row${row.teamId === you ? " bru-row-you" : ""}`}>
-            <span className="bru-rank">{i + 1}</span>
+            <span className={`bru-rank${i < 3 ? ` bru-rank-${i + 1}` : ""}`}>{i + 1}</span>
 
             <div>
               <div className="bru-row-name">
@@ -43,7 +44,9 @@ export default function Board({ state }: { state: CtfStatePayload }) {
               <div className="bru-row-sub">{describe(row)}</div>
             </div>
 
-            <span className="bru-row-pts">{row.points}</span>
+            <span className="bru-avatar" aria-hidden="true">
+              {initials(row.teamName)}
+            </span>
           </div>
         ))}
       </div>
@@ -52,8 +55,16 @@ export default function Board({ state }: { state: CtfStatePayload }) {
         {state.teamCount} team{state.teamCount === 1 ? "" : "s"} · ranked on points, then the
         shorter run
       </p>
-    </div>
+    </>
   );
+}
+
+/** Up to two initials for the avatar disc. Falls back to a spider glyph. */
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "🕷";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
 /**
@@ -63,13 +74,13 @@ export default function Board({ state }: { state: CtfStatePayload }) {
  * brings a fresh number. Thirty rows each animating their own second hand is
  * thirty re-renders a second for information nobody reads to the second, and
  * doing it would mean calling Date.now() during render, which is an impure read
- * that makes the server and client paints disagree. The clock that must be
- * exact is the team's own, at the top of their screen; these are honest to
- * within one poll and cost nothing.
+ * that makes the server and client paints disagree.
  */
 function describe(row: CtfStatePayload["standings"][number]): string {
   if (row.elapsedMs === null) return "Not started";
 
   const time = formatDuration(row.elapsedMs);
-  return row.finished ? `Finished · ${time} · ${row.solved} solved` : `${time} · ${row.solved} solved`;
+  return row.finished
+    ? `Finished · ${time} · ${row.solved} solved`
+    : `${row.points} pts · ${row.solved} solved`;
 }

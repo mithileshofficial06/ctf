@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { MAX_TEAM_NAME } from "@/lib/config";
 import {
   CTF_CHALLENGES,
@@ -11,18 +11,19 @@ import {
 } from "@/lib/ctf/content";
 import type { CtfStatePayload, PublicQuestion, PublicSection } from "@/lib/ctf/state-view";
 import Board from "./Board";
+import { ArrowLeft, Bang, Bars, Check, Download, Lock, Spider, ZipFile } from "./icons";
 
 /**
  * The whole CTF, at one URL.
  *
- * Three screens — join, start, play — because they are three states of one
- * thing, not three pages. Everything on screen comes from a single
- * /api/ctf/state poll, so the questions, the clock and the standings cannot
- * disagree with each other.
+ * Screens: join → start → dashboard, and a full-screen challenge detail that
+ * replaces the dashboard when a card is opened (the "Back to Challenges" view).
+ * Everything comes from a single /api/ctf/state poll, so the cards, the clock
+ * and the standings can never disagree.
  *
  * QUESTION TEXT IS NOT POLLED. Titles, explanations and payloads are static and
- * public, so they are imported straight from the content module and live in the
- * bundle. The poll carries only what changes: who solved what, and when.
+ * public, so they are imported straight from the content module. The poll
+ * carries only what changes: who solved what, and when.
  */
 
 const POLL_MS = 5_000;
@@ -38,14 +39,6 @@ export default function CtfBoard({ initial }: { initial: CtfStatePayload }) {
   const [state, setState] = useState<CtfStatePayload>(initial);
   const [openSlug, setOpenSlug] = useState<string | null>(null);
 
-  /**
-   * The clock's anchor: the elapsed time the server last reported, and the
-   * local instant we received it.
-   *
-   * Ticking from these two rather than from `Date.now() - startedAt` is what
-   * keeps a laptop with a wrong clock honest — only the DELTA since the last
-   * poll comes from the local clock, and it is re-anchored every five seconds.
-   */
   const [anchor, setAnchor] = useState(() => ({
     elapsedMs: initial.run?.elapsedMs ?? 0,
     at: 0,
@@ -62,8 +55,7 @@ export default function CtfBoard({ initial }: { initial: CtfStatePayload }) {
       if (!res.ok) return;
       applyState((await res.json()) as CtfStatePayload);
     } catch {
-      // A dropped poll during a burst is normal. The next tick recovers, and a
-      // stale board for five seconds beats an error banner over a live event.
+      // A dropped poll during a burst is normal. The next tick recovers.
     }
   }, [applyState]);
 
@@ -85,7 +77,9 @@ export default function CtfBoard({ initial }: { initial: CtfStatePayload }) {
       <div className="bru-cols">
         <JoinPanel teamCount={state.teamCount} onJoined={applyState} />
         <aside className="bru-side">
-          <Board state={state} />
+          <div className="bru-box">
+            <Board state={state} />
+          </div>
         </aside>
       </div>
     );
@@ -97,38 +91,46 @@ export default function CtfBoard({ initial }: { initial: CtfStatePayload }) {
       <div className="bru-cols">
         <StartPanel teamName={state.team.teamName} onStarted={applyState} />
         <aside className="bru-side">
-          <Board state={state} />
+          <div className="bru-box">
+            <Board state={state} />
+          </div>
         </aside>
       </div>
     );
   }
 
   const run = state.run;
+  const located = openSlug ? locateQuestion(run, openSlug) : undefined;
 
+  // ── Screen 4: a single challenge, full screen ────────────────────────────
+  if (located) {
+    return (
+      <ChallengeDetail
+        // Remount per question so the flag field and verdict reset themselves,
+        // rather than clearing them from an effect (which the compiler rejects).
+        key={located.question.slug}
+        located={located}
+        onBack={() => setOpenSlug(null)}
+        onSolved={refresh}
+      />
+    );
+  }
+
+  // ── Screen 3: the dashboard ──────────────────────────────────────────────
   return (
-    <div className="bru-cols">
-      <div>
-        <StatusStrip run={run} anchor={anchor} />
-
+    <div className="bru-dash">
+      <div className="bru-columns">
         {run.sections.map((section) => (
-          <SectionBlock
-            key={section.section}
-            section={section}
-            onOpen={setOpenSlug}
-          />
+          <SectionColumn key={section.section} section={section} onOpen={setOpenSlug} />
         ))}
       </div>
 
       <aside className="bru-side">
-        <Board state={state} />
+        <ActiveTeamCard run={run} anchor={anchor} teamName={state.team.teamName} />
+        <div className="bru-box bru-leader">
+          <Board state={state} />
+        </div>
       </aside>
-
-      <QuestionDialog
-        slug={openSlug}
-        run={run}
-        onClose={() => setOpenSlug(null)}
-        onSolved={refresh}
-      />
     </div>
   );
 }
@@ -141,16 +143,14 @@ function subscribeToSecond(onChange: () => void): () => void {
 }
 
 const nowSnapshot = () => Math.floor(Date.now() / 1_000) * 1_000;
-/** 0 means "no trustworthy clock yet", so the server and the first client paint agree. */
 const serverSnapshot = () => 0;
 
 export interface ClockAnchor {
   elapsedMs: number;
-  /** Local receipt time. 0 before the first client-side poll. */
   at: number;
 }
 
-/** h:mm:ss once past an hour, m:ss below it. Always zero-padded after the first field. */
+/** h:mm:ss once past an hour, m:ss below it. */
 export function formatDuration(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));
   const h = Math.floor(total / 3600);
@@ -162,12 +162,6 @@ export function formatDuration(ms: number): string {
     : `${m}:${String(s).padStart(2, "0")}`;
 }
 
-/**
- * Elapsed time, ticking between polls.
- *
- * Frozen runs return the server's number untouched — a finished team's time is
- * a result, not a clock, and must not drift by a second every render.
- */
 function useElapsed(anchor: ClockAnchor, frozen: boolean): number {
   const now = useSyncExternalStore(subscribeToSecond, nowSnapshot, serverSnapshot);
 
@@ -207,8 +201,6 @@ function JoinPanel({
         setError(data.error ?? "Could not join");
         return;
       }
-      // Pull the full state rather than trusting the join response — this is
-      // the same payload the poll uses, so the screen switches consistently.
       const fresh = await fetch("/api/ctf/state", { cache: "no-store" });
       onJoined((await fresh.json()) as CtfStatePayload);
     } catch {
@@ -307,6 +299,7 @@ function StartPanel({
       </ul>
 
       <button className="bru-btn bru-btn-go bru-btn-xl" onClick={start} disabled={busy}>
+        <Spider size={22} />
         {busy ? "Starting..." : "Start the clock"}
       </button>
 
@@ -319,42 +312,57 @@ function StartPanel({
   );
 }
 
-/* ── Status ───────────────────────────────────────────────────────────── */
+/* ── Active team card ─────────────────────────────────────────────────── */
 
-function StatusStrip({
+function ActiveTeamCard({
   run,
   anchor,
+  teamName,
 }: {
   run: NonNullable<CtfStatePayload["run"]>;
   anchor: ClockAnchor;
+  teamName: string;
 }) {
   const elapsed = useElapsed(anchor, run.finished);
 
   return (
-    <div className="bru-strip">
-      <div className={`bru-stat ${run.finished ? "bru-stat-done" : "bru-stat-clock"}`}>
-        <span className="bru-stat-label">{run.finished ? "Final time" : "Elapsed"}</span>
-        <span className="bru-stat-value" role="timer" aria-live="off">
-          {formatDuration(elapsed)}
+    <div className="bru-team-card-wrap">
+      <div className="bru-team-card">
+        <span className="bru-team-emblem">
+          <Spider size={28} />
         </span>
+        <div>
+          <p className="bru-team-label">Active team</p>
+          <p className="bru-team-name">{teamName}</p>
+          <p className="bru-team-points">Total secured points: {run.points}</p>
+        </div>
       </div>
-      <div className="bru-stat">
-        <span className="bru-stat-label">Score</span>
-        <span className="bru-stat-value">{run.points}</span>
-      </div>
-      <div className="bru-stat">
-        <span className="bru-stat-label">Solved</span>
-        <span className="bru-stat-value">
-          {run.totalSolved}/{run.totalQuestions}
-        </span>
+
+      <div className="bru-team-stats">
+        <div className="bru-team-stat">
+          <span className="bru-team-stat-label">{run.finished ? "Final" : "Elapsed"}</span>
+          <span className="bru-team-stat-value is-clock" role="timer" aria-live="off">
+            {formatDuration(elapsed)}
+          </span>
+        </div>
+        <div className="bru-team-stat">
+          <span className="bru-team-stat-label">Solved</span>
+          <span className="bru-team-stat-value">
+            {run.totalSolved}/{run.totalQuestions}
+          </span>
+        </div>
+        <div className="bru-team-stat">
+          <span className="bru-team-stat-label">Points</span>
+          <span className="bru-team-stat-value">{run.points}</span>
+        </div>
       </div>
     </div>
   );
 }
 
-/* ── Sections ─────────────────────────────────────────────────────────── */
+/* ── Difficulty column ────────────────────────────────────────────────── */
 
-function SectionBlock({
+function SectionColumn({
   section,
   onOpen,
 }: {
@@ -364,129 +372,110 @@ function SectionBlock({
   const accent = SECTION_COLOR[section.section as CtfSection];
 
   return (
-    <section className="bru-section" style={{ ["--accent" as string]: accent }}>
-      <div className="bru-section-head">
-        <h2 className="bru-h2">{section.name}</h2>
-        <span className="bru-section-tag">
-          {section.points} pts each · {section.solvedCount}/{section.total} solved
-        </span>
+    <section className="bru-col" style={{ ["--accent" as string]: accent }}>
+      <div className="bru-col-head">
+        <span className="bru-col-name">{section.name}</span>
+        <span className="bru-col-count">({section.total})</span>
       </div>
 
-      <div className="bru-grid">
-        {section.questions.map((q) => (
-          <QuestionCard key={q.slug} question={q} sectionName={section.name} onOpen={onOpen} />
-        ))}
-      </div>
+      {section.questions.map((q) => (
+        <QuestionCard key={q.slug} question={q} section={section} onOpen={onOpen} />
+      ))}
     </section>
   );
 }
 
 function QuestionCard({
   question,
-  sectionName,
+  section,
   onOpen,
 }: {
   question: PublicQuestion;
-  sectionName: string;
+  section: PublicSection;
   onOpen: (slug: string) => void;
 }) {
   const content = BY_SLUG.get(question.slug);
   if (!content) return null;
 
+  const solved = question.solved;
+
   return (
     <button
       type="button"
-      className={`bru-card${question.solved ? " bru-card-solved" : ""}`}
+      className={`bru-card${solved ? " bru-card-solved" : ""}`}
       onClick={() => onOpen(question.slug)}
     >
-      <span className="bru-card-num">
-        <span>
-          {sectionName} {question.order}
+      <div className="bru-card-top">
+        <h3 className="bru-card-title">{content.title}</h3>
+        <span className="bru-points">
+          <b>{section.points}</b>
+          <span>PTS</span>
         </span>
-        {question.solved && <span className="bru-solved-mark">Solved</span>}
-      </span>
+      </div>
 
-      <span className="bru-card-body">
-        <h3 className="bru-h3">{content.title}</h3>
-        <p>{content.brief}</p>
-      </span>
+      <div className="bru-pill-row">
+        <span className="bru-pill-cat">
+          <Lock size={12} />
+          {content.category}
+        </span>
+        <span className="bru-pill-diff">
+          <Bars size={12} />
+          {section.name}
+        </span>
+      </div>
 
-      <span className="bru-card-foot">
-        <span>{question.solved ? "Review" : "Open"}</span>
-        <span aria-hidden="true">→</span>
-      </span>
+      <p className="bru-card-brief">{content.brief}</p>
+
+      <div className="bru-card-actions">
+        {solved ? (
+          <span className="bru-status bru-status-done">
+            <Check size={14} /> Solved
+          </span>
+        ) : (
+          <span className="bru-status bru-status-todo">
+            <Bang size={14} /> Unsolved
+          </span>
+        )}
+        <span className="bru-card-cta">{solved ? "Review" : "Solve"} →</span>
+      </div>
     </button>
   );
 }
 
-/* ── Dialog ───────────────────────────────────────────────────────────── */
+/* ── Challenge detail (full screen) ───────────────────────────────────── */
 
-/**
- * The question, in full.
- *
- * A native <dialog> with showModal(), so focus trapping, Esc-to-close, inert
- * background and the top layer all come from the platform. A hand-rolled
- * div-with-a-backdrop gets every one of those wrong by default.
- */
-function QuestionDialog({
-  slug,
-  run,
-  onClose,
+function ChallengeDetail({
+  located,
+  onBack,
   onSolved,
 }: {
-  slug: string | null;
-  run: NonNullable<CtfStatePayload["run"]>;
-  onClose: () => void;
+  located: { question: PublicQuestion; section: PublicSection };
+  onBack: () => void;
   onSolved: () => void;
 }) {
-  const ref = useRef<HTMLDialogElement>(null);
+  const { question, section } = located;
+  const content = BY_SLUG.get(question.slug);
   const [flag, setFlag] = useState("");
   const [busy, setBusy] = useState(false);
   const [verdict, setVerdict] = useState<Verdict | null>(null);
 
-  const content = slug ? BY_SLUG.get(slug) : undefined;
-  const question = slug ? locateQuestion(run, slug) : undefined;
-
-  // Drive the dialog element from the open slug, rather than tracking two
-  // sources of truth that can disagree about whether it is showing.
+  // Bring the top of the detail into view when it takes over the screen. This
+  // syncs an external system (scroll position), not React state, so it belongs
+  // in an effect. The component is remounted per question (keyed by the parent),
+  // so this runs once per open.
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, []);
 
-    if (slug && !el.open) {
-      setFlag("");
-      setVerdict(null);
-      el.showModal();
-    } else if (!slug && el.open) {
-      el.close();
-    }
-  }, [slug]);
+  if (!content) return null;
 
-  // Lock the page behind the modal. A native <dialog> traps focus but does NOT
-  // stop the body scrolling underneath it, so a wheel gesture over the backdrop
-  // drags the board around behind the question. Freeze the body while one is
-  // open and restore the exact previous value on close or unmount.
-  useEffect(() => {
-    if (!slug) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previous;
-    };
-  }, [slug]);
-
-  if (!content || !question) {
-    // Still rendered so the ref exists and the effect above has something to
-    // drive; simply empty until a question is chosen.
-    return <dialog ref={ref} className="bru-dialog" onClose={onClose} />;
-  }
-
-  const solved = question.question.solved;
+  const accent = SECTION_COLOR[section.section as CtfSection];
+  const solved = question.solved;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const value = flag.trim();
-    if (!value || !slug) return;
+    if (!value) return;
 
     setBusy(true);
     setVerdict(null);
@@ -494,7 +483,7 @@ function QuestionDialog({
       const res = await fetch("/api/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event: "ctf", challengeSlug: slug, payload: value }),
+        body: JSON.stringify({ event: "ctf", challengeSlug: question.slug, payload: value }),
       });
       const data = await res.json();
 
@@ -519,7 +508,6 @@ function QuestionDialog({
       } else {
         setVerdict({ ok: false, message: reasonText(data.meta?.reason) });
       }
-      // The server decides what is solved now, never the client.
       onSolved();
     } catch {
       setVerdict({ ok: false, message: "Network error — try again." });
@@ -529,102 +517,127 @@ function QuestionDialog({
   }
 
   return (
-    <dialog
-      ref={ref}
-      className="bru-dialog"
-      onClose={onClose}
-      style={{ ["--accent" as string]: SECTION_COLOR[question.section.section as CtfSection] }}
-      aria-labelledby="bru-dialog-title"
-    >
-      <div className="bru-dialog-head">
-        <div>
-          <p className="bru-kicker">
-            {question.section.name} {question.question.order} · {question.section.points} points
-          </p>
-          <h2 className="bru-h2" id="bru-dialog-title">
-            {content.title}
-          </h2>
+    <div className="bru-detail" style={{ ["--accent" as string]: accent }}>
+      <button type="button" className="bru-back" onClick={onBack}>
+        <ArrowLeft size={16} /> Back to Challenges
+      </button>
+
+      <div className="bru-detail-panel">
+        <div className="bru-detail-head">
+          <div className="bru-detail-title">
+            <span className="bru-emblem">
+              <Spider size={28} />
+            </span>
+            <h2>{content.title}</h2>
+          </div>
+          <span className="bru-points-badge">
+            <b>{section.points}</b>
+            <span>POINTS</span>
+          </span>
         </div>
-        <button type="button" className="bru-dialog-close" onClick={onClose} aria-label="Close">
-          ✕
-        </button>
-      </div>
 
-      <div className="bru-dialog-body">
-        <p className="bru-prose">{content.prompt}</p>
-
-        {content.payload && (
-          <>
-            <span className="bru-label">The payload</span>
-            <pre className="bru-payload" tabIndex={0}>
-              {content.payload}
-            </pre>
-          </>
-        )}
+        <div className="bru-detail-pills">
+          <span className="bru-pill-cat">
+            <Lock size={13} />
+            {content.category}
+          </span>
+          <span className="bru-pill-diff">
+            <Bars size={13} />
+            {section.name}
+          </span>
+        </div>
 
         {content.attachments.length > 0 && (
-          <div className="bru-files">
-            {content.attachments.map((name) => (
-              <a
-                key={name}
-                className="bru-file"
-                href={`/api/ctf/attachment?challenge=${encodeURIComponent(content.slug)}&name=${encodeURIComponent(name)}`}
-              >
-                ↓ {name.split("/").pop()}
-              </a>
-            ))}
+          <div className="bru-attach">
+            <span className="bru-attach-icon">
+              <ZipFile size={26} />
+            </span>
+            <div className="bru-attach-meta">
+              <b>{content.attachments[0].split("/").pop()}</b>
+              <span>Challenge file</span>
+            </div>
+            <div className="bru-files">
+              {content.attachments.map((name) => (
+                <a
+                  key={name}
+                  className="bru-file"
+                  href={`/api/ctf/attachment?challenge=${encodeURIComponent(content.slug)}&name=${encodeURIComponent(name)}`}
+                >
+                  <Download size={15} /> {name.split("/").pop()}
+                </a>
+              ))}
+            </div>
           </div>
         )}
 
-        {solved ? (
-          <p className="bru-verdict bru-verdict-good">
-            Solved{question.question.solvedAt ? ` at ${timeOfDay(question.question.solvedAt)}` : ""}. Worth{" "}
-            {question.section.points} points.
-          </p>
-        ) : (
-          <>
-            <label className="bru-label" htmlFor="bru-flag">
-              Your flag
-            </label>
-            <form className="bru-form" onSubmit={submit} style={{ marginTop: 0 }}>
+        <div className="bru-block">
+          <h3 className="bru-block-title">
+            <Spider size={16} /> Briefing
+          </h3>
+          <div className="bru-block-body">
+            <p className="bru-prose">{content.prompt}</p>
+          </div>
+        </div>
+
+        {content.payload && (
+          <div className="bru-block">
+            <h3 className="bru-block-title">
+              <Spider size={16} /> The payload
+            </h3>
+            <pre className="bru-payload" tabIndex={0}>
+              {content.payload}
+            </pre>
+          </div>
+        )}
+
+        <div className="bru-block">
+          <h3 className="bru-block-title">
+            <Spider size={16} /> Submission
+          </h3>
+          {solved ? (
+            <p className="bru-verdict bru-verdict-good">
+              Solved{question.solvedAt ? ` at ${timeOfDay(question.solvedAt)}` : ""}. Worth{" "}
+              {section.points} points.
+            </p>
+          ) : (
+            <form className="bru-submit-row" onSubmit={submit}>
               <input
-                id="bru-flag"
                 className="bru-input"
                 value={flag}
                 onChange={(e) => setFlag(e.target.value)}
-                placeholder={FLAG_FORMAT}
+                placeholder={`Enter your flag here...  ${FLAG_FORMAT}`}
+                aria-label="Your flag"
                 autoComplete="off"
                 spellCheck={false}
                 disabled={busy}
+                autoFocus
               />
-              <button className="bru-btn bru-btn-go" type="submit" disabled={busy || !flag.trim()}>
+              <button className="bru-btn bru-submit" type="submit" disabled={busy || !flag.trim()}>
+                <Spider size={18} />
                 {busy ? "..." : "Submit"}
               </button>
             </form>
-          </>
-        )}
+          )}
 
-        {verdict && (
-          <p
-            className={`bru-verdict ${verdict.ok ? "bru-verdict-good" : "bru-verdict-bad"}`}
-            role="status"
-            aria-live="polite"
-          >
-            {verdict.message}
-          </p>
-        )}
+          {verdict && (
+            <p
+              className={`bru-verdict ${verdict.ok ? "bru-verdict-good" : "bru-verdict-bad"}`}
+              role="status"
+              aria-live="polite"
+            >
+              {verdict.message}
+            </p>
+          )}
+        </div>
       </div>
-    </dialog>
+    </div>
   );
 }
 
 /**
- * Find a question and the section holding it.
- *
- * Deliberately NOT memoized: it is a scan of eight items, and wrapping it in a
- * useMemo whose dependency is the whole run object defeated the React Compiler
- * outright — it could not prove the memo was preserved and skipped optimizing
- * the entire component, which costs more than the scan ever could.
+ * Find a question and the section holding it. Deliberately NOT memoized: it is a
+ * scan of eight items, and a useMemo over the whole run object defeats the React
+ * Compiler for the entire component, which costs more than the scan.
  */
 function locateQuestion(
   run: NonNullable<CtfStatePayload["run"]>,
