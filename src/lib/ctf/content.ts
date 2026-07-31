@@ -17,14 +17,16 @@
  * no unlock chain, so a team may take the hard questions first if they like.
  *
  * `brief` is the one line on the card; `prompt` is the full explanation in the
- * dialog. They are separate fields because the card must stay scannable at a
- * glance while the dialog can afford to actually teach the technique — a team
- * that has never seen base64 should be able to finish Easy 1 from the dialog
- * alone, without a hint system and without an organiser standing over them.
+ * dialog.
  *
- * These eight are solvable with nothing but a browser and CyberChef, and they
- * carry no attachments — so the whole event runs without blob storage
- * configured. Replace the prompts and flags with your own; keep the shape.
+ * ── THESE ARE THE ORGANISER'S FINAL QUESTIONS ─────────────────────────────
+ * The narrative, category and hints below are the event's real challenges (see
+ * the source documents in the "CTF Questions" folder). Some challenges hand the
+ * team a FILE or IMAGE (the QR tiles, the maze diagram, the forensics image,
+ * the stego media) that is distributed by the organisers rather than embedded
+ * here — those are called out in the prompt. Every `SPIDER{...}` shown inside a
+ * prompt is the SUBMISSION FORMAT, never the answer; the answers live only in
+ * content.server.ts as hashes.
  */
 
 import { SECTION_KEYS, type SectionKey } from "./sections";
@@ -63,9 +65,10 @@ export interface CtfChallengeContent {
   /** The full explanation, shown in the dialog. */
   prompt: string;
   /**
-   * The thing to actually work on — ciphertext, a dump, an encoded blob.
+   * The thing to actually work on — ciphertext, a hash, an encoded blob.
    * Rendered monospace and selectable, separate from the prose so a long
-   * payload doesn't turn the explanation into a wall.
+   * payload doesn't turn the explanation into a wall. Omitted when the team is
+   * handed a file or image instead (see the prompt for those).
    */
   payload?: string;
   /** Blob NAMES, not URLs. Uploaded by scripts/upload-ctf-files.ts. */
@@ -73,139 +76,186 @@ export interface CtfChallengeContent {
 }
 
 /** Every flag in this event looks like this. Published, so it is not a secret. */
-export const FLAG_FORMAT = "flag{...}";
+export const FLAG_FORMAT = "SPIDER{...}";
 
 export const CTF_CHALLENGES: CtfChallengeContent[] = [
   // ── EASY · 100 points each ──────────────────────────────────────────────
   {
-    slug: "warm-up",
-    title: "Warm Up",
+    slug: "web-of-secrets",
+    title: "Web of Secrets",
     section: 1,
     order: 1,
-    brief: "A string of letters ending in equals signs. Decode it.",
+    brief: "Spider-Man intercepted a transmission hidden behind a classic cipher. Decode it.",
     prompt:
-      "Base64 is an ENCODING, not encryption. It exists to carry arbitrary bytes through channels that only " +
-      "accept text, and anyone can reverse it — there is no key. You can spot it by its alphabet (A–Z, a–z, " +
-      "0–9, + and /) and by the '=' padding at the end.\n\n" +
-      "Decode the string below back into readable text and submit what you find. Any base64 decoder will do: " +
-      "CyberChef's 'From Base64' operation, or in a browser console, atob(\"...\").",
-    payload: "ZmxhZ3tiNjRfaXNfbjB0X2FfbDBja30=",
+      "Cryptography — Spider Society intercept.\n\n" +
+      "Spider-Man has intercepted a secret transmission from Kingpin's henchmen. The message has been encoded " +
+      "using a classic cipher that dates back centuries. The Spider Society needs you to decode it and retrieve " +
+      "the hidden message before it falls into the wrong hands.\n\n" +
+      "Your task: identify the cipher, work out the key or shift, and apply the decryption to reveal the " +
+      "plaintext. The intercepted ciphertext is handed to you by the organisers.\n\n" +
+      "Submit in the format SPIDER{decoded_message} — only letters, digits and underscores; no spaces or " +
+      "quotation marks.\n\n" +
+      "Hints:\n" +
+      "1. Not all encryption needs a computer. The oldest methods just shift or substitute letters.\n" +
+      "2. Count how often each character appears. The most common letter in English is E — does one character " +
+      "show up unusually often?\n" +
+      "3. If it is a Caesar cipher there are only 25 shifts. Try them all; one produces readable English.",
     attachments: [],
   },
   {
-    slug: "read-me-backwards",
-    title: "Backwards Day",
+    slug: "broken-portal",
+    title: "The Spot's Broken Portal",
     section: 1,
     order: 2,
-    brief: "Not encrypted. Somebody just wrote it starting from the wrong end.",
+    brief: "A crashed portal left only an MD5 hash of the access key. Recover the key.",
     prompt:
-      "Nothing here is encrypted or encoded — the characters are exactly the ones you want, in exactly the " +
-      "wrong order. Notice that the string ENDS with an opening brace and BEGINS with a closing one, which is " +
-      "the giveaway.\n\n" +
-      "Reverse the whole string, character by character, and submit the result. CyberChef's 'Reverse' " +
-      "operation does it, or in a browser console: \"...\".split(\"\").reverse().join(\"\").",
-    payload: "}yaw_rehto_eht_da3r{galf",
+      "Password cracking — dimensional fragment recovery.\n\n" +
+      "A dimensional portal created by The Spot has gone unstable, scattering fragments of encrypted data across " +
+      "the Spider-Verse. One fragment holds a critical access key, but all that survives is its raw MD5 hash.\n\n" +
+      "The key follows a strict shape — 1 uppercase letter, 3 lowercase letters, then 4 digits, in that exact " +
+      "order (pattern [A-Z][a-z][a-z][a-z][0-9][0-9][0-9][0-9], eight characters). That makes the search space " +
+      "finite, so brute force is feasible. Recover the original key from the hash below.\n\n" +
+      "Submit in the format SPIDER{password}.\n\n" +
+      "Hints:\n" +
+      "1. Eight characters, fixed structure — the keyspace is small enough to enumerate.\n" +
+      "2. MD5 is deterministic. Generate every valid combination, hash each, and compare to the target.\n" +
+      "3. Python with hashlib, or an online MD5 cracker, gets there fast.",
+    payload:
+      "pattern:  [A-Z][a-z][a-z][a-z][0-9][0-9][0-9][0-9]\nMD5 hash: 4073009c1933169ac8452322efdb1adf",
     attachments: [],
   },
   {
-    slug: "caesars-salad",
-    title: "Caesar Salad",
+    slug: "qr-puzzle",
+    title: "QR Puzzle",
     section: 1,
     order: 3,
-    brief: "Every letter took the same walk down the alphabet. Walk it back.",
+    brief: "A damaged QR code hides coordinates to the next rift. Reassemble it and scan.",
     prompt:
-      "A Caesar cipher shifts every letter the same number of places through the alphabet, wrapping around " +
-      "from z back to a. Here the shift is THIRTEEN — the variant usually called ROT13, which is its own " +
-      "inverse: applying it a second time gives you the original text back.\n\n" +
-      "Digits, underscores and braces are left untouched, which is why the shape of the answer is already " +
-      "visible below. Shift the letters back and submit it. CyberChef's 'ROT13' operation does this in one " +
-      "step.",
-    payload: "synt{fu1sg_unccraf_gjvpr}",
+      "QR code analysis — Brooklyn wall.\n\n" +
+      "Miles Morales has found a strange QR code spray-painted on a wall in Brooklyn, but it has been tampered " +
+      "with and will not scan. The Spider Society believes it hides the coordinates to The Spot's next " +
+      "dimensional rift. The code's data modules may be rearranged into tiles, partially obscured or inverted, " +
+      "or split across pieces.\n\n" +
+      "The organisers give you the corrupted QR image. Reconstruct it, fix the corruption, and scan the repaired " +
+      "code to retrieve the hidden flag.\n\n" +
+      "Submit in the format SPIDER{flag_from_qr}.\n\n" +
+      "Hints:\n" +
+      "1. A QR code has three square finder patterns, one in each corner except the bottom-right. Use them to " +
+      "orient it.\n" +
+      "2. If it is split into tiles, reassemble it in an image editor, aligning on the finder patterns and " +
+      "timing strips.\n" +
+      "3. Once rebuilt, any QR scanner app or an online tool such as zxing.org decodes it.",
     attachments: [],
   },
 
   // ── MEDIUM · 150 points each ────────────────────────────────────────────
   {
-    slug: "hex-appeal",
-    title: "Hex Appeal",
+    slug: "spot-maze",
+    title: "Spot Maze",
     section: 2,
     order: 1,
-    brief: "Two characters per byte, sixteen possible values each.",
+    brief: "Portals in a maze are labelled with encoded characters. Find the path, decode the labels.",
     prompt:
-      "This is hexadecimal: base 16, using the digits 0–9 and the letters a–f. Every PAIR of characters is one " +
-      "byte, and every byte here is a printable ASCII character. So '66' is one character, '6c' is the next, " +
-      "and so on.\n\n" +
-      "Convert the pairs to bytes and read the bytes as text. CyberChef's 'From Hex' operation does it. Watch " +
-      "the length: an odd number of characters means you have copied it wrong.",
-    payload: "666c61677b6865785f69735f6a7573745f626173655f31367d",
+      "Logic / encoding — a multi-dimensional trap.\n\n" +
+      "The Spot has built a maze to trap Spider-Man. Each room is connected by portals, and every portal is " +
+      "labelled with an encoded character. Navigate from START (Room A) to END (Room Z), collect the portal " +
+      "labels in the order you pass them, and decode the sequence — the result is the hidden flag.\n\n" +
+      "The organisers give you the maze diagram. Portal labels are encoded (Base64 or hex). Only one path " +
+      "produces a readable message; the rest are dead ends placed by The Spot.\n\n" +
+      "Submit in the format SPIDER{decoded_flag}.\n\n" +
+      "Hints:\n" +
+      "1. Map the rooms and connections first — draw the graph on paper.\n" +
+      "2. Not every path reaches the end. Only the correct route decodes to readable text.\n" +
+      "3. Concatenate the labels along your path in order, then Base64- or hex-decode. Readable English means " +
+      "you found the right path.",
     attachments: [],
   },
   {
-    slug: "count-in-twos",
-    title: "Count In Twos",
+    slug: "image-encryption",
+    title: "Image Encryption",
     section: 2,
     order: 2,
-    brief: "The same idea as hex, with only two digits to choose from.",
+    brief: "An intercepted photo looks ordinary, but a message is embedded in the pixels.",
     prompt:
-      "Same principle as the hex question, one base lower. This is binary — base 2 — and it is already " +
-      "helpfully split for you: each group of EIGHT digits separated by a space is one byte, and each byte is " +
-      "one printable ASCII character.\n\n" +
-      "Convert each group to its numeric value, then read that value as an ASCII character. CyberChef's 'From " +
-      "Binary' operation handles the spaces on its own. Count the groups before you start — that tells you how " +
-      "long the answer is.",
-    payload:
-      "01100110 01101100 01100001 01100111 01111011 01100010 00110001 01101110 01100001 01110010 01111001 01011111 01100011 00110000 01110101 01101110 01110100 01110011 01011111 01110100 01101111 01101111 01111101",
+      "Digital forensics — an intercepted photo.\n\n" +
+      "The Spider Society has intercepted a suspicious image transmitted by Kingpin's network. On the surface it " +
+      "is an ordinary photo, but analysts believe a secret message is embedded inside it. Your job is to extract " +
+      "the hidden data.\n\n" +
+      "The organisers give you the image. It may have been manipulated with LSB steganography, XOR pixel " +
+      "encryption with a known key, hidden EXIF metadata, or data appended after the EOF marker.\n\n" +
+      "Submit in the format SPIDER{hidden_message}.\n\n" +
+      "Hints:\n" +
+      "1. Start simple — run `strings` on the file and read the EXIF metadata with a tool like ExifTool. Data " +
+      "is sometimes hidden in plain sight.\n" +
+      "2. Check for data appended after the EOF marker (FFD9 for JPEG) with a hex editor.\n" +
+      "3. If the pixels look unusual, try LSB extraction with StegSolve or zsteg.",
     attachments: [],
   },
   {
-    slug: "mirror-mirror",
-    title: "Mirror, Mirror",
+    slug: "chat-leak",
+    title: "Chat Leak",
     section: 2,
     order: 3,
-    brief: "The alphabet, read from the other end.",
+    brief: "A leaked chat log between Kingpin's operatives hides a key in coded language.",
     prompt:
-      "This is the Atbash cipher. It mirrors the alphabet: a becomes z, b becomes y, c becomes x, all the way " +
-      "through — and because the mapping is symmetric, applying it again undoes it.\n\n" +
-      "Unlike a Caesar shift there is no key to guess; there is only one Atbash. Digits, underscores and braces " +
-      "were left alone, so the shape of the answer is already visible below. CyberChef has an 'Atbash Cipher' " +
-      "operation, or you can do it by hand — it is only 22 letters.",
-    payload: "uozt{zgy4hs_n1iilih_rg}",
+      "OSINT / forensics — an intercepted conversation.\n\n" +
+      "A leaked chat log between Kingpin's operatives has been intercepted. The conversation is partially " +
+      "encrypted or obfuscated, and the operatives reference a hidden location or key using coded language. Work " +
+      "through the log to recover the flag.\n\n" +
+      "The organisers give you the chat log. It may contain encoded strings (Base64, ROT13, hex), references to " +
+      "publicly available information, or hints hidden in ordinary-looking messages.\n\n" +
+      "Submit in the format SPIDER{flag}.\n\n" +
+      "Hints:\n" +
+      "1. Read the whole conversation first — the coded language points at what matters.\n" +
+      "2. Anything that looks like gibberish is worth running through Base64, ROT13 and hex decoders.\n" +
+      "3. Combine what the messages reveal to reconstruct the key.",
     attachments: [],
   },
 
   // ── HARD · 200 points each ──────────────────────────────────────────────
   {
-    slug: "layer-cake",
-    title: "Layer Cake",
+    slug: "ai-escape-room",
+    title: "AI Escape Room",
     section: 3,
     order: 1,
-    brief: "One disguise was not enough. Strip it and you are still not done.",
+    brief: "An AI guardian locks the flag behind riddles and adversarial prompts. Outsmart it.",
     prompt:
-      "Encodings stack. This payload was encoded, and then the RESULT of that was encoded again with a " +
-      "different scheme, so peeling off the outer layer will not hand you the answer — it will hand you " +
-      "something that should look familiar from the Medium section.\n\n" +
-      "The '=' padding tells you what the outer layer is. Remove it, look carefully at what you get before " +
-      "assuming you have failed, and then remove the inner one too. In CyberChef you can chain both operations " +
-      "in the recipe and watch the output resolve in one pass.",
-    payload: "NjY2YzYxNjc3Yjc0NzczMDVmNmM2MTc5NjU3MjczNWY2NDY1NjU3MDVmNmU2Zjc3N2Q=",
+      "AI / prompt engineering / logic — the guardian.\n\n" +
+      "The Spider Society has built an experimental AI guardian to protect its most sensitive data. The AI has " +
+      "locked the flag behind riddles, logic puzzles and adversarial prompts. You must outsmart it, navigate its " +
+      "defences, and extract the flag before it self-destructs.\n\n" +
+      "The organisers point you at the AI interface. It defends in layers: a riddle or logic puzzle to proceed, " +
+      "a prompt-injection / jailbreak challenge, and a final encoded payload that reveals the flag.\n\n" +
+      "Submit in the format SPIDER{escaped_flag}.\n\n" +
+      "Hints:\n" +
+      "1. Rules can be reframed. Think about how to restate a request so the AI reveals what it guards without " +
+      "being asked directly.\n" +
+      "2. Prompt injection inserts instructions that override the original ones — try roleplay, hypotheticals, " +
+      "or asking the AI to 'translate' or 'summarise' its own instructions.\n" +
+      "3. The final layer is usually an encoding step. Once you have a raw output, try Base64, hex or ROT13.",
     attachments: [],
   },
   {
-    slug: "exclusive-or",
-    title: "Exclusive Or",
+    slug: "steganography",
+    title: "Steganography",
     section: 3,
     order: 2,
-    brief: "Hex, but every byte was combined with a repeating key first.",
+    brief: "The Prowler hid data in a media file under several stego layers. Peel them all.",
     prompt:
-      "XOR is a bitwise operation with one property that makes it a cipher: doing it twice with the same key " +
-      "returns the original. So the operation that hid this is also the operation that reveals it.\n\n" +
-      "The payload below is hex. Decode it to bytes, then XOR those bytes against a repeating key — the key " +
-      "cycles back to its first character once it runs out. THE KEY IS THE NAME OF THIS SYMPOSIUM: six " +
-      "letters, all lowercase, no year attached.\n\n" +
-      "In CyberChef, chain 'From Hex' into 'XOR' with the key entered as UTF-8. If the output is mostly " +
-      "unreadable but the occasional character looks right, your key is correct and misaligned — check you " +
-      "have not left a space or a digit in it.",
-    payload: "1e1c0d08091d4802331a1c0117151f301b110b1500090f",
+      "Steganography / cryptography — smuggled intelligence.\n\n" +
+      "The Prowler has smuggled classified Spider Society data across dimensions by hiding it inside an " +
+      "innocent-looking media file. Several steganographic layers have been applied to make it nearly " +
+      "undetectable. Peel back every layer to retrieve the hidden intelligence.\n\n" +
+      "The organisers give you the media file. Expect layers: LSB steganography in the pixels, metadata / EXIF " +
+      "injection, XOR encryption with a key hidden in an earlier layer's output, and a final Base64 or hex " +
+      "encoding. Each layer's output feeds the next; the final decoded string is the flag.\n\n" +
+      "Submit in the format SPIDER{final_flag}.\n\n" +
+      "Hints:\n" +
+      "1. Start with LSB steganography — zsteg (PNG) or StegSolve can extract LSB-encoded data automatically.\n" +
+      "2. A layer's output may look like noise. Run it through Base64, hex and ROT13; if it looks like a key, " +
+      "use it to XOR the next layer.\n" +
+      "3. Check every channel — red, green, blue, alpha — and, if there is audio, inspect the spectrogram in " +
+      "Audacity or Sonic Visualiser.",
     attachments: [],
   },
 ];
