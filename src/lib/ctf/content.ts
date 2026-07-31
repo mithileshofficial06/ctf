@@ -63,6 +63,12 @@ export interface CtfChallengeContent {
   order: number;
   /** Short category label, shown on the card and detail pill (e.g. "Cryptography"). */
   category: string;
+  /**
+   * Decorative figure for the card and detail view — a transparent PNG under
+   * /public. Organiser-supplied art with the background removed; purely cosmetic,
+   * never the puzzle. Omit for a card with no art.
+   */
+  image?: string;
   /** One line, shown on the card. Enough to choose what to work on. */
   brief: string;
   /** The full explanation, shown in the dialog. */
@@ -89,6 +95,7 @@ export const CTF_CHALLENGES: CtfChallengeContent[] = [
     section: 1,
     order: 1,
     category: "Cryptography",
+    image: "/challenges/web-of-secrets.png",
     brief: "Spider-Man intercepted a transmission hidden behind a classic cipher. Decode it.",
     prompt:
       "Cryptography — Spider Society intercept.\n\n" +
@@ -112,6 +119,7 @@ export const CTF_CHALLENGES: CtfChallengeContent[] = [
     section: 1,
     order: 2,
     category: "Password Cracking",
+    image: "/challenges/broken-portal.png",
     brief: "A crashed portal left only an MD5 hash of the access key. Recover the key.",
     prompt:
       "Password cracking — dimensional fragment recovery.\n\n" +
@@ -135,6 +143,7 @@ export const CTF_CHALLENGES: CtfChallengeContent[] = [
     section: 1,
     order: 3,
     category: "QR Code Analysis",
+    image: "/challenges/qr-puzzle.png",
     brief: "A damaged QR code hides coordinates to the next rift. Reassemble it and scan.",
     prompt:
       "QR code analysis — Brooklyn wall.\n\n" +
@@ -161,6 +170,7 @@ export const CTF_CHALLENGES: CtfChallengeContent[] = [
     section: 2,
     order: 1,
     category: "Logic / Encoding",
+    image: "/challenges/spot-maze.png",
     brief: "Portals in a maze are labelled with encoded characters. Find the path, decode the labels.",
     prompt:
       "Logic / encoding — a multi-dimensional trap.\n\n" +
@@ -183,6 +193,7 @@ export const CTF_CHALLENGES: CtfChallengeContent[] = [
     section: 2,
     order: 2,
     category: "Digital Forensics",
+    image: "/challenges/image-encryption.png",
     brief: "An intercepted photo looks ordinary, but a message is embedded in the pixels.",
     prompt:
       "Digital forensics — an intercepted photo.\n\n" +
@@ -205,6 +216,7 @@ export const CTF_CHALLENGES: CtfChallengeContent[] = [
     section: 2,
     order: 3,
     category: "OSINT / Forensics",
+    image: "/challenges/chat-leak.png",
     brief: "A leaked chat log between Kingpin's operatives hides a key in coded language.",
     prompt:
       "OSINT / forensics — an intercepted conversation.\n\n" +
@@ -228,6 +240,7 @@ export const CTF_CHALLENGES: CtfChallengeContent[] = [
     section: 3,
     order: 1,
     category: "AI / Prompt Engineering",
+    image: "/challenges/ai-escape-room.png",
     brief: "An AI guardian locks the flag behind riddles and adversarial prompts. Outsmart it.",
     prompt:
       "AI / prompt engineering / logic — the guardian.\n\n" +
@@ -251,6 +264,7 @@ export const CTF_CHALLENGES: CtfChallengeContent[] = [
     section: 3,
     order: 2,
     category: "Steganography",
+    image: "/challenges/steganography.png",
     brief: "The Prowler hid data in a media file under several stego layers. Peel them all.",
     prompt:
       "Steganography / cryptography — smuggled intelligence.\n\n" +

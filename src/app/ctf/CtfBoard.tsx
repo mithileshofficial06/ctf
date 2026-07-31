@@ -405,39 +405,49 @@ function QuestionCard({
       className={`bru-card${solved ? " bru-card-solved" : ""}`}
       onClick={() => onOpen(question.slug)}
     >
-      <div className="bru-card-top">
-        <h3 className="bru-card-title">{content.title}</h3>
-        <span className="bru-points">
-          <b>{section.points}</b>
-          <span>PTS</span>
-        </span>
-      </div>
-
-      <div className="bru-pill-row">
-        <span className="bru-pill-cat">
-          <Lock size={12} />
-          {content.category}
-        </span>
-        <span className="bru-pill-diff">
-          <Bars size={12} />
-          {section.name}
-        </span>
-      </div>
-
-      <p className="bru-card-brief">{content.brief}</p>
-
-      <div className="bru-card-actions">
-        {solved ? (
-          <span className="bru-status bru-status-done">
-            <Check size={14} /> Solved
+      <span className="bru-card-main">
+        <span className="bru-card-top">
+          <span className="bru-card-title">{content.title}</span>
+          <span className="bru-points">
+            <b>{section.points}</b>
+            <span>PTS</span>
           </span>
-        ) : (
-          <span className="bru-status bru-status-todo">
-            <Bang size={14} /> Unsolved
+        </span>
+
+        <span className="bru-pill-row">
+          <span className="bru-pill-cat">
+            <Lock size={12} />
+            {content.category}
           </span>
-        )}
-        <span className="bru-card-cta">{solved ? "Review" : "Solve"} →</span>
-      </div>
+          <span className="bru-pill-diff">
+            <Bars size={12} />
+            {section.name}
+          </span>
+        </span>
+
+        <span className="bru-card-brief">{content.brief}</span>
+
+        <span className="bru-card-actions">
+          {solved ? (
+            <span className="bru-status bru-status-done">
+              <Check size={14} /> Solved
+            </span>
+          ) : (
+            <span className="bru-status bru-status-todo">
+              <Bang size={14} /> Unsolved
+            </span>
+          )}
+          <span className="bru-card-cta">{solved ? "Review" : "Solve"} →</span>
+        </span>
+      </span>
+
+      {content.image && (
+        <span
+          className="bru-card-art"
+          style={{ backgroundImage: `url("${content.image}")` }}
+          aria-hidden="true"
+        />
+      )}
     </button>
   );
 }
@@ -523,6 +533,14 @@ function ChallengeDetail({
       </button>
 
       <div className="bru-detail-panel">
+        {content.image && (
+          <div
+            className="bru-detail-art"
+            style={{ backgroundImage: `url("${content.image}")` }}
+            aria-hidden="true"
+          />
+        )}
+
         <div className="bru-detail-head">
           <div className="bru-detail-title">
             <span className="bru-emblem">
