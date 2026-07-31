@@ -35,17 +35,18 @@ export type CtfSection = SectionKey;
 export const CTF_SECTIONS = SECTION_KEYS;
 
 /**
- * Section accents.
+ * Section accents — the Spider-Verse comic palette.
  *
- * Three hues, taken from the palette validated against the card surface for
- * lightness band, chroma floor, CVD separation and contrast. Colour is NEVER
- * the identity channel: every section is its own titled block and every card
- * states its difficulty and its points in words.
+ * Cyan / yellow / magenta: the three inks a comic press actually uses, which is
+ * why the theme reads as a printed page. Each one is bright enough to sit behind
+ * BLACK text at genuine contrast — they are used as flat accent blocks, never as
+ * the only signal, since every section is its own titled panel and every card
+ * states its difficulty and points in words.
  */
 export const SECTION_COLOR: Record<CtfSection, string> = {
-  1: "#00A98F",
-  2: "#C47F00",
-  3: "#FF3B6B",
+  1: "#19E3FF", // Easy — spider cyan
+  2: "#FFD400", // Medium — comic yellow
+  3: "#FF2D75", // Hard — into-the-verse magenta
 };
 
 export const SECTION_LABEL: Record<CtfSection, string> = {

@@ -1,58 +1,75 @@
 /**
- * BRUTALIST THEME
+ * SPIDER-VERSE THEME
  *
- * The rules this file follows, so edits stay coherent:
+ * A printed comic book, mid-action. The rules this file follows so edits stay
+ * coherent:
  *
- *   1. HARD EDGES. border-radius is 0 everywhere. No exceptions, including
- *      inputs and buttons, which pick up a radius from the UA sheet if you let
- *      them.
- *   2. VISIBLE STRUCTURE. Every box states its own boundary with a heavy black
- *      border and a solid offset shadow. Nothing floats or blurs; depth is a
- *      hard-edged shadow, never a gradient.
- *   3. MONOSPACE, and a lot of uppercase with wide tracking. Type is the
- *      ornament — there is no other decoration.
- *   4. RAW COLOUR, used in flat blocks. Yellow is the page, black is the ink,
- *      and the three section accents are the only other hues.
+ *   1. INK ON PAPER. The palette is the four inks a comic press actually uses —
+ *      cyan, magenta, yellow, and black — over a dark "night city" page. Accent
+ *      blocks are flat and sit behind BLACK text, like a printed panel.
+ *   2. HALFTONE. The one texture is the Ben-Day dot: a two-colour halftone field
+ *      behind everything, and again inside accent panels.
+ *   3. HARD PANELS. Every box is a comic panel: a heavy black keyline and a solid
+ *      neon offset — depth is a printed drop-shadow, never a blur.
+ *   4. CHROMATIC ABERRATION. The display type is split red/cyan, the "across the
+ *      spider-verse" mis-registration. It jitters, but only where motion is
+ *      allowed.
  *
- * ACCESSIBILITY IS NOT NEGOTIABLE UNDER THIS STYLE. Brutalism is licence to be
- * ugly, not licence to be unusable:
+ * ACCESSIBILITY IS NOT NEGOTIABLE UNDER THIS STYLE. Neon is licence to be loud,
+ * not licence to be unusable:
  *   - Colour is never the only channel. Every state also says its name in text.
- *   - The accents sit behind BLACK text, so their contrast is genuine rather
- *     than nominally passing.
+ *   - Accent inks sit behind BLACK text, so their contrast is genuine.
  *   - :focus-visible keeps a real, thick outline. Removing focus rings is the
  *     one "clean" instinct that actually locks keyboard users out.
- *   - prefers-reduced-motion turns off the blinking and the button travel.
+ *   - prefers-reduced-motion turns off the glitch, the blink and the button
+ *     travel.
  */
 
 .bru {
-  --ink: #000000;
-  --paper: #FFE600;
-  --card: #FFFFFF;
-  --shadow: #000000;
+  --void: #0b0a14;
+  --panel: #171226;
+  --panel-2: #1f1836;
+  --line: #000000;
+  --ink: #f6f2ff;
+  --dim: #a99fce;
 
-  /* Section accents, used as flat blocks behind black text. */
-  --easy: #00E5A0;
-  --medium: #FFA300;
-  --hard: #FF4B6B;
+  /* The comic inks. */
+  --cyan: #19e3ff;
+  --magenta: #ff2d75;
+  --yellow: #ffd400;
+  --purple: #b026ff;
+  --green: #2bff9a;
+  --red: #ff2740;
 
-  --good: #00C853;
-  --bad: #FF1744;
+  /* Section accents mirror content.ts SECTION_COLOR. */
+  --easy: #19e3ff;
+  --medium: #ffd400;
+  --hard: #ff2d75;
+
+  --good: #2bff9a;
+  --bad: #ff2740;
 
   --edge: 3px;
   --pop: 6px;
 
-  --mono: "Courier New", Courier, ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans: var(--font-geist-sans), "Segoe UI", system-ui, sans-serif;
+  --mono: var(--font-geist-mono), "Courier New", ui-monospace, Menlo, monospace;
 
   min-height: 100vh;
-  background: var(--paper);
+  background-color: var(--void);
   color: var(--ink);
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 16px;
-  line-height: 1.5;
-  /* The one texture in the whole design: a faint grid, like engineering paper. */
+  line-height: 1.55;
+  /* Two-ink halftone over a pair of corner glows: the printed-page texture. */
   background-image:
-    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.06) 0 1px, transparent 1px 40px),
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.06) 0 1px, transparent 1px 40px);
+    radial-gradient(rgba(255, 45, 117, 0.16) 1.1px, transparent 1.6px),
+    radial-gradient(rgba(25, 227, 255, 0.12) 1.1px, transparent 1.6px),
+    radial-gradient(1100px 620px at 82% -12%, rgba(176, 38, 255, 0.28), transparent 70%),
+    radial-gradient(900px 560px at -12% 112%, rgba(25, 227, 255, 0.2), transparent 70%);
+  background-size: 22px 22px, 22px 22px, 100% 100%, 100% 100%;
+  background-position: 0 0, 11px 11px, 0 0, 0 0;
+  background-attachment: fixed;
 }
 
 .bru *,
@@ -68,28 +85,51 @@
   padding: 24px 20px 80px;
 }
 
+/* A reusable halftone, painted inside accent panels so they read as printed. */
+.bru-section-head,
+.bru-card-num,
+.bru-dialog-head,
+.bru-stat-clock {
+  background-image: radial-gradient(rgba(0, 0, 0, 0.22) 1px, transparent 1.4px);
+  background-size: 12px 12px;
+}
+
 /* ── Type ─────────────────────────────────────────────────────────────── */
 
 .bru-title {
-  font-size: clamp(2.2rem, 7vw, 4.5rem);
+  font-size: clamp(2.3rem, 7.5vw, 5rem);
   font-weight: 900;
+  font-style: italic;
   letter-spacing: -0.02em;
-  line-height: 0.95;
+  line-height: 0.9;
   text-transform: uppercase;
   margin: 0;
+  color: #ffffff;
+  text-shadow: 2px 0 0 var(--magenta), -2px 0 0 var(--cyan);
+  animation: bru-glitch 3.2s steps(2, end) infinite;
+}
+
+@keyframes bru-glitch {
+  0%, 100% { text-shadow: 2px 0 0 var(--magenta), -2px 0 0 var(--cyan); }
+  20% { text-shadow: -3px 0 0 var(--magenta), 3px 0 0 var(--cyan); }
+  40% { text-shadow: 3px 0 0 var(--magenta), -2px 0 0 var(--cyan); }
+  60% { text-shadow: -1px 0 0 var(--magenta), 2px 0 0 var(--cyan); }
+  80% { text-shadow: 2px 0 0 var(--magenta), -3px 0 0 var(--cyan); }
 }
 
 .bru-kicker {
   font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.22em;
+  font-weight: 800;
+  letter-spacing: 0.24em;
   text-transform: uppercase;
   margin: 0;
+  color: var(--cyan);
 }
 
 .bru-h2 {
   font-size: clamp(1.3rem, 3vw, 2rem);
   font-weight: 900;
+  font-style: italic;
   letter-spacing: -0.01em;
   text-transform: uppercase;
   margin: 0;
@@ -98,7 +138,7 @@
 .bru-h3 {
   font-size: 1.05rem;
   font-weight: 900;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   text-transform: uppercase;
   margin: 0;
 }
@@ -106,12 +146,15 @@
 /* ── Header ───────────────────────────────────────────────────────────── */
 
 .bru-header {
-  border: var(--edge) solid var(--ink);
-  background: var(--ink);
-  color: var(--paper);
-  box-shadow: var(--pop) var(--pop) 0 var(--shadow);
-  padding: 22px 24px;
-  margin-bottom: 28px;
+  position: relative;
+  border: var(--edge) solid var(--line);
+  background:
+    radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1.4px) 0 0 / 14px 14px,
+    linear-gradient(120deg, #1a0f2e 0%, #0e0a1c 60%, #240a1e 100%);
+  color: var(--ink);
+  box-shadow: var(--pop) var(--pop) 0 var(--magenta), var(--pop) var(--pop) 0 calc(var(--pop) + 3px) var(--line);
+  padding: 26px 26px;
+  margin-bottom: 30px;
   display: flex;
   flex-wrap: wrap;
   gap: 18px;
@@ -120,19 +163,22 @@
 }
 
 .bru-header .bru-kicker {
-  color: var(--paper);
-  margin-bottom: 8px;
+  color: var(--cyan);
+  margin-bottom: 10px;
 }
 
 .bru-id {
-  border: var(--edge) solid var(--paper);
-  padding: 8px 14px;
+  border: 2px solid var(--cyan);
+  color: var(--cyan);
+  padding: 9px 14px;
+  font-family: var(--mono);
   font-size: 0.8rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   max-width: 100%;
   overflow-wrap: anywhere;
+  box-shadow: 3px 3px 0 rgba(25, 227, 255, 0.25);
 }
 
 /* ── Layout ───────────────────────────────────────────────────────────── */
@@ -157,102 +203,107 @@
 /* ── Boxes ────────────────────────────────────────────────────────────── */
 
 .bru-box {
-  border: var(--edge) solid var(--ink);
-  background: var(--card);
-  box-shadow: var(--pop) var(--pop) 0 var(--shadow);
+  border: var(--edge) solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--pop) var(--pop) 0 var(--purple), var(--pop) var(--pop) 0 calc(var(--pop) + 3px) var(--line);
   padding: 22px;
 }
 
 .bru-box + .bru-box {
-  margin-top: 24px;
+  margin-top: 26px;
 }
 
 /* ── Buttons ──────────────────────────────────────────────────────────── */
 
 .bru-btn {
-  font-family: inherit;
+  font-family: var(--sans);
   font-size: 0.95rem;
   font-weight: 900;
-  letter-spacing: 0.1em;
+  font-style: italic;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 14px 22px;
-  border: var(--edge) solid var(--ink);
-  background: var(--paper);
-  color: var(--ink);
-  box-shadow: 4px 4px 0 var(--shadow);
+  padding: 14px 24px;
+  border: var(--edge) solid var(--line);
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 5px 5px 0 var(--line);
   cursor: pointer;
   transition: transform 80ms linear, box-shadow 80ms linear;
 }
 
-/* Physical press: the box moves onto its own shadow. */
+/* Physical press: the panel drops onto its own printed shadow. */
 .bru-btn:hover:not(:disabled) {
   transform: translate(2px, 2px);
-  box-shadow: 2px 2px 0 var(--shadow);
+  box-shadow: 3px 3px 0 var(--line);
 }
 
 .bru-btn:active:not(:disabled) {
-  transform: translate(4px, 4px);
-  box-shadow: 0 0 0 var(--shadow);
+  transform: translate(5px, 5px);
+  box-shadow: 0 0 0 var(--line);
 }
 
 .bru-btn:disabled {
-  opacity: 0.45;
+  opacity: 0.4;
   cursor: not-allowed;
-  box-shadow: 4px 4px 0 var(--shadow);
+  box-shadow: 5px 5px 0 var(--line);
 }
 
 .bru-btn-go {
-  background: var(--good);
-  color: var(--ink);
+  background: var(--cyan);
+  color: #04121a;
 }
 
 .bru-btn-danger {
-  background: var(--bad);
-  color: #fff;
+  background: var(--red);
+  color: #ffffff;
 }
 
 .bru-btn-ghost {
-  background: var(--card);
+  background: var(--panel-2);
+  color: var(--ink);
 }
 
 .bru-btn-xl {
   font-size: 1.3rem;
-  padding: 22px 40px;
-  box-shadow: var(--pop) var(--pop) 0 var(--shadow);
+  padding: 22px 42px;
+  box-shadow: var(--pop) var(--pop) 0 var(--line);
 }
 
-/* Never remove this. */
+/* Never remove this. Bright enough to land on any panel in the theme. */
 .bru :focus-visible {
-  outline: 4px solid var(--ink);
+  outline: 4px solid var(--yellow);
   outline-offset: 3px;
-}
-
-.bru-header :focus-visible,
-.bru-btn-danger:focus-visible {
-  outline-color: var(--paper);
 }
 
 /* ── Inputs ───────────────────────────────────────────────────────────── */
 
 .bru-input {
-  font-family: inherit;
+  font-family: var(--mono);
   font-size: 1rem;
   font-weight: 700;
   padding: 14px 16px;
-  border: var(--edge) solid var(--ink);
-  background: var(--card);
+  border: 2px solid #3a2f57;
+  background: #0d0a17;
   color: var(--ink);
   width: 100%;
   min-width: 0;
+  transition: border-color 100ms linear, box-shadow 100ms linear;
+}
+
+.bru-input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 2px rgba(25, 227, 255, 0.35);
+  outline: none;
 }
 
 .bru-input::placeholder {
-  color: #6b6b6b;
+  color: #6f6690;
   font-weight: 400;
 }
 
 .bru-input:disabled {
-  background: #e8e8e8;
+  background: #17131f;
+  opacity: 0.7;
 }
 
 .bru-form {
@@ -269,20 +320,21 @@
 /* ── Join / start ─────────────────────────────────────────────────────── */
 
 .bru-hero {
-  border: var(--edge) solid var(--ink);
-  background: var(--card);
-  box-shadow: var(--pop) var(--pop) 0 var(--shadow);
-  padding: 34px 28px;
+  border: var(--edge) solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--pop) var(--pop) 0 var(--magenta), var(--pop) var(--pop) 0 calc(var(--pop) + 3px) var(--line);
+  padding: 34px 30px;
 }
 
 .bru-hero p {
   margin: 12px 0 0;
   max-width: 62ch;
+  color: var(--dim);
 }
 
 .bru-start {
   text-align: center;
-  padding: 48px 28px;
+  padding: 48px 30px;
 }
 
 .bru-start .bru-btn-xl {
@@ -292,17 +344,18 @@
 .bru-rules {
   list-style: none;
   padding: 0;
-  margin: 22px auto 0;
+  margin: 24px auto 0;
   display: grid;
   gap: 10px;
-  max-width: 52ch;
+  max-width: 54ch;
 }
 
 .bru-rules li {
-  border-left: var(--edge) solid var(--ink);
-  padding-left: 12px;
+  border-left: var(--edge) solid var(--cyan);
+  padding-left: 14px;
   font-size: 0.9rem;
   text-align: left;
+  color: var(--dim);
 }
 
 /* ── Status strip ─────────────────────────────────────────────────────── */
@@ -310,53 +363,61 @@
 .bru-strip {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  border: var(--edge) solid var(--ink);
-  background: var(--ink);
-  box-shadow: var(--pop) var(--pop) 0 var(--shadow);
-  margin-bottom: 26px;
+  border: var(--edge) solid var(--line);
+  background: var(--line);
+  gap: var(--edge);
+  box-shadow: var(--pop) var(--pop) 0 var(--cyan), var(--pop) var(--pop) 0 calc(var(--pop) + 3px) var(--line);
+  margin-bottom: 28px;
 }
 
 .bru-stat {
-  background: var(--card);
+  background: var(--panel);
   padding: 16px 18px;
-  border-right: var(--edge) solid var(--ink);
-}
-
-.bru-stat:last-child {
-  border-right: 0;
 }
 
 .bru-stat-label {
   font-size: 0.65rem;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   display: block;
   margin-bottom: 4px;
+  color: var(--dim);
 }
 
 .bru-stat-value {
+  font-family: var(--mono);
   font-size: 1.8rem;
   font-weight: 900;
   line-height: 1.1;
+  color: var(--ink);
   /* Digits must not reflow the box as they tick. */
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
 }
 
 .bru-stat-clock {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--cyan);
+}
+
+.bru-stat-clock .bru-stat-label,
+.bru-stat-clock .bru-stat-value {
+  color: #04121a;
 }
 
 .bru-stat-done {
-  background: var(--good);
+  background: var(--green);
+}
+
+.bru-stat-done .bru-stat-label,
+.bru-stat-done .bru-stat-value {
+  color: #04180f;
 }
 
 /* ── Sections ─────────────────────────────────────────────────────────── */
 
 .bru-section {
-  margin-bottom: 34px;
+  margin-bottom: 36px;
 }
 
 .bru-section-head {
@@ -365,21 +426,27 @@
   gap: 12px;
   align-items: center;
   justify-content: space-between;
-  border: var(--edge) solid var(--ink);
-  background: var(--accent, var(--card));
-  padding: 12px 18px;
-  box-shadow: var(--pop) var(--pop) 0 var(--shadow);
-  margin-bottom: 22px;
+  border: var(--edge) solid var(--line);
+  background-color: var(--accent, var(--cyan));
+  color: #06040c;
+  padding: 13px 18px;
+  box-shadow: var(--pop) var(--pop) 0 var(--line);
+  margin-bottom: 24px;
+}
+
+.bru-section-head .bru-h2 {
+  color: #06040c;
 }
 
 .bru-section-tag {
-  border: var(--edge) solid var(--ink);
-  background: var(--ink);
-  color: #fff;
-  padding: 5px 12px;
+  border: 2px solid var(--line);
+  background: var(--line);
+  color: #ffffff;
+  padding: 6px 12px;
+  font-family: var(--mono);
   font-size: 0.72rem;
   font-weight: 900;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
@@ -392,36 +459,38 @@
 /* ── Question cards ───────────────────────────────────────────────────── */
 
 .bru-card {
-  border: var(--edge) solid var(--ink);
-  background: var(--card);
-  box-shadow: var(--pop) var(--pop) 0 var(--shadow);
+  border: var(--edge) solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: var(--pop) var(--pop) 0 var(--accent, var(--purple)), var(--pop) var(--pop) 0 calc(var(--pop) + 3px) var(--line);
   padding: 0;
   display: flex;
   flex-direction: column;
   text-align: left;
   font-family: inherit;
-  color: inherit;
   cursor: pointer;
   width: 100%;
-  transition: transform 80ms linear, box-shadow 80ms linear;
+  transition: transform 90ms linear, box-shadow 90ms linear;
 }
 
 .bru-card:hover {
   transform: translate(3px, 3px);
-  box-shadow: 3px 3px 0 var(--shadow);
+  box-shadow: 3px 3px 0 var(--accent, var(--purple)), 3px 3px 0 calc(3px + 3px) var(--line);
 }
 
 .bru-card-num {
-  background: var(--accent, var(--card));
-  border-bottom: var(--edge) solid var(--ink);
-  padding: 8px 16px;
+  background-color: var(--accent, var(--cyan));
+  color: #06040c;
+  border-bottom: var(--edge) solid var(--line);
+  padding: 9px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 10px;
+  font-family: var(--mono);
   font-size: 0.7rem;
   font-weight: 900;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
@@ -433,55 +502,68 @@
 .bru-card-body p {
   margin: 8px 0 0;
   font-size: 0.88rem;
+  color: var(--dim);
 }
 
 .bru-card-foot {
-  border-top: var(--edge) solid var(--ink);
-  padding: 10px 16px;
+  border-top: var(--edge) solid var(--line);
+  padding: 11px 16px;
   font-size: 0.72rem;
   font-weight: 900;
-  letter-spacing: 0.12em;
+  font-style: italic;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   display: flex;
   justify-content: space-between;
   gap: 10px;
+  color: var(--cyan);
 }
 
-/* Solved is announced three ways: the fill, the word, and the count. Never
-   colour alone. */
+/* Solved is announced three ways: the green panel, the word, and the count.
+   Never colour alone. */
 .bru-card-solved {
-  background: var(--good);
+  box-shadow: var(--pop) var(--pop) 0 var(--green), var(--pop) var(--pop) 0 calc(var(--pop) + 3px) var(--line);
+}
+
+.bru-card-solved .bru-card-foot {
+  color: var(--green);
 }
 
 .bru-solved-mark {
-  background: var(--ink);
-  color: var(--good);
+  background: var(--green);
+  color: #04180f;
   padding: 3px 8px;
 }
 
 /* ── Dialog ───────────────────────────────────────────────────────────── */
 
 .bru-dialog {
-  border: var(--edge) solid var(--ink);
-  background: var(--card);
-  box-shadow: 10px 10px 0 var(--shadow);
+  /* Tailwind Preflight zeroes element margins, which defeats the native modal's
+     margin:auto centering. Pin and centre it explicitly, in both axes. */
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  border: var(--edge) solid var(--line);
+  background: var(--panel);
+  box-shadow: 0 0 0 3px var(--line), 16px 16px 0 var(--magenta);
   padding: 0;
   width: min(760px, calc(100vw - 32px));
   max-height: min(88vh, 900px);
   overflow: auto;
   color: var(--ink);
-  font-family: var(--mono);
+  font-family: var(--sans);
 }
 
 .bru-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.72);
+  background: rgba(6, 3, 14, 0.82);
 }
 
 .bru-dialog-head {
   position: sticky;
   top: 0;
-  background: var(--accent, var(--card));
-  border-bottom: var(--edge) solid var(--ink);
+  background-color: var(--accent, var(--cyan));
+  color: #06040c;
+  border-bottom: var(--edge) solid var(--line);
   padding: 16px 20px;
   display: flex;
   gap: 14px;
@@ -490,39 +572,51 @@
   z-index: 1;
 }
 
+.bru-dialog-head .bru-kicker {
+  color: #241a05;
+}
+
+.bru-dialog-head .bru-h2 {
+  color: #06040c;
+}
+
 .bru-dialog-close {
-  font-family: inherit;
+  font-family: var(--mono);
   font-size: 1rem;
   font-weight: 900;
   line-height: 1;
-  padding: 8px 12px;
-  border: var(--edge) solid var(--ink);
-  background: var(--card);
+  padding: 9px 13px;
+  border: var(--edge) solid var(--line);
+  background: #06040c;
+  color: #ffffff;
   cursor: pointer;
   flex: none;
 }
 
 .bru-dialog-body {
-  padding: 22px 20px;
+  padding: 24px 22px;
 }
 
 /* Explanations are authored with paragraph breaks; keep them. */
 .bru-prose {
   white-space: pre-wrap;
   font-size: 0.95rem;
-  line-height: 1.65;
+  line-height: 1.7;
   margin: 0;
   max-width: 70ch;
+  color: #ded6f5;
 }
 
 .bru-payload {
-  margin: 20px 0 0;
+  margin: 22px 0 0;
   padding: 16px;
-  border: var(--edge) solid var(--ink);
-  background: var(--ink);
-  color: var(--easy);
+  border: var(--edge) solid var(--line);
+  background: #05040a;
+  color: var(--cyan);
+  font-family: var(--mono);
   font-size: 0.85rem;
   line-height: 1.7;
+  box-shadow: inset 0 0 0 1px rgba(25, 227, 255, 0.25);
   /* Long unbroken ciphertext must wrap rather than push the dialog wide. */
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -532,11 +626,13 @@
 
 .bru-label {
   display: block;
+  font-family: var(--mono);
   font-size: 0.7rem;
   font-weight: 900;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  margin: 24px 0 8px;
+  margin: 26px 0 8px;
+  color: var(--cyan);
 }
 
 .bru-files {
@@ -547,32 +643,34 @@
 }
 
 .bru-file {
-  border: var(--edge) solid var(--ink);
-  background: var(--paper);
-  padding: 8px 14px;
+  border: 2px solid var(--cyan);
+  background: #0d0a17;
+  padding: 9px 14px;
+  font-family: var(--mono);
   font-size: 0.8rem;
   font-weight: 700;
   text-decoration: none;
-  color: var(--ink);
+  color: var(--cyan);
 }
 
 /* ── Verdicts ─────────────────────────────────────────────────────────── */
 
 .bru-verdict {
-  margin: 16px 0 0;
+  margin: 18px 0 0;
   padding: 12px 16px;
-  border: var(--edge) solid var(--ink);
+  border: var(--edge) solid var(--line);
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .bru-verdict-good {
   background: var(--good);
+  color: #04180f;
 }
 
 .bru-verdict-bad {
   background: var(--bad);
-  color: #fff;
+  color: #ffffff;
 }
 
 /* ── Board ────────────────────────────────────────────────────────────── */
@@ -582,7 +680,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  border-bottom: var(--edge) solid var(--ink);
+  border-bottom: var(--edge) solid var(--magenta);
   padding-bottom: 12px;
   margin-bottom: 4px;
 }
@@ -595,12 +693,14 @@
   font-weight: 900;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+  color: var(--magenta);
 }
 
 .bru-dot {
   width: 9px;
   height: 9px;
-  background: var(--bad);
+  background: var(--magenta);
+  box-shadow: 0 0 8px var(--magenta);
   display: inline-block;
   animation: bru-blink 1.4s steps(1, end) infinite;
 }
@@ -620,7 +720,7 @@
   gap: 12px;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 2px solid var(--ink);
+  border-bottom: 2px solid #2a2140;
 }
 
 .bru-row:last-child {
@@ -628,45 +728,49 @@
 }
 
 .bru-rank {
-  font-size: 1.1rem;
+  font-family: var(--mono);
+  font-size: 1.15rem;
   font-weight: 900;
+  color: var(--cyan);
   font-variant-numeric: tabular-nums;
 }
 
 .bru-row-name {
-  font-weight: 700;
+  font-weight: 800;
   overflow-wrap: anywhere;
 }
 
 .bru-row-sub {
   font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  opacity: 0.75;
+  color: var(--dim);
   font-variant-numeric: tabular-nums;
 }
 
 .bru-row-pts {
-  font-size: 1.15rem;
+  font-family: var(--mono);
+  font-size: 1.2rem;
   font-weight: 900;
   text-align: right;
+  color: var(--yellow);
   font-variant-numeric: tabular-nums;
 }
 
-/* "You" is marked with a fill and a word, not a tint alone. */
+/* "You" is marked with a fill, an inset bar and a word — not a tint alone. */
 .bru-row-you {
-  background: var(--paper);
-  box-shadow: -10px 0 0 var(--paper), 10px 0 0 var(--paper);
+  background: rgba(255, 212, 0, 0.09);
+  box-shadow: inset 4px 0 0 var(--yellow), -10px 0 0 rgba(255, 212, 0, 0.09), 10px 0 0 rgba(255, 212, 0, 0.09);
 }
 
 .bru-you-tag {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--yellow);
+  color: #1a1400;
   padding: 2px 6px;
   font-size: 0.62rem;
   font-weight: 900;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   margin-left: 6px;
 }
 
@@ -674,6 +778,7 @@
   padding: 22px 0;
   font-size: 0.85rem;
   font-weight: 700;
+  color: var(--dim);
 }
 
 /* ── Admin ────────────────────────────────────────────────────────────── */
@@ -681,9 +786,9 @@
 .bru-tablewrap {
   /* Wide tables scroll inside their own box; the page never scrolls sideways. */
   overflow-x: auto;
-  border: var(--edge) solid var(--ink);
-  background: var(--card);
-  box-shadow: var(--pop) var(--pop) 0 var(--shadow);
+  border: var(--edge) solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--pop) var(--pop) 0 var(--purple), var(--pop) var(--pop) 0 calc(var(--pop) + 3px) var(--line);
 }
 
 .bru-table {
@@ -695,18 +800,19 @@
 
 .bru-table th,
 .bru-table td {
-  border-bottom: 2px solid var(--ink);
+  border-bottom: 2px solid #2a2140;
   padding: 10px 14px;
   text-align: left;
   white-space: nowrap;
 }
 
 .bru-table th {
-  background: var(--ink);
-  color: var(--paper);
+  background: #06040c;
+  color: var(--cyan);
+  font-family: var(--mono);
   font-size: 0.66rem;
   font-weight: 900;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   position: sticky;
   top: 0;
@@ -717,23 +823,24 @@
 }
 
 .bru-table td.bru-num {
+  font-family: var(--mono);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
 }
 
 .bru-pill {
   display: inline-block;
-  border: 2px solid var(--ink);
+  border: 2px solid var(--line);
   padding: 2px 8px;
   font-size: 0.66rem;
   font-weight: 900;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-.bru-pill-yes { background: var(--good); }
-.bru-pill-no { background: var(--bad); color: #fff; }
-.bru-pill-idle { background: #e0e0e0; }
+.bru-pill-yes { background: var(--good); color: #04180f; }
+.bru-pill-no { background: var(--bad); color: #ffffff; }
+.bru-pill-idle { background: #2a2140; color: var(--dim); }
 
 .bru-admin-grid {
   display: grid;
@@ -769,5 +876,6 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
+  .bru-title { animation: none; }
   .bru-dot { opacity: 1; }
 }

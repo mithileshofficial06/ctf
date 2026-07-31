@@ -43,9 +43,11 @@ export const CTF_FLAGS: Record<string, string> = {
   // ── Easy · 100 pts ──
   // Whatever your intercepted ciphertext decodes to.
   "web-of-secrets": "SPIDER{PLACEHOLDER_set_web_of_secrets_flag}",
-  // The password behind MD5 4073009c1933169ac8452322efdb1adf. Being cracked;
-  // if the crack lands, this becomes SPIDER{<that password>}.
-  "broken-portal": "SPIDER{PLACEHOLDER_set_broken_portal_flag}",
+  // Recovered from MD5 4073009c1933169ac8452322efdb1adf by brute force over the
+  // [A-Z][a-z][a-z][a-z][0-9][0-9][0-9][0-9] pattern: the key is Gwen2099. This
+  // is the REAL answer — grading is case-insensitive, so Gwen2099 / gwen2099
+  // both accept. Confirm it is the value you intended before the event.
+  "broken-portal": "SPIDER{Gwen2099}",
   // Whatever the repaired QR code scans to.
   "qr-puzzle": "SPIDER{PLACEHOLDER_set_qr_puzzle_flag}",
 

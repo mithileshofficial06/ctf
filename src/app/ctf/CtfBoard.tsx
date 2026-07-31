@@ -462,6 +462,19 @@ function QuestionDialog({
     }
   }, [slug]);
 
+  // Lock the page behind the modal. A native <dialog> traps focus but does NOT
+  // stop the body scrolling underneath it, so a wheel gesture over the backdrop
+  // drags the board around behind the question. Freeze the body while one is
+  // open and restore the exact previous value on close or unmount.
+  useEffect(() => {
+    if (!slug) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [slug]);
+
   if (!content || !question) {
     // Still rendered so the ref exists and the effect above has something to
     // drive; simply empty until a question is chosen.
