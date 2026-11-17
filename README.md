@@ -86,13 +86,13 @@ without editing `/etc/hosts`. `eventFromHost()` handles the port.
 
 | Piece | State |
 |---|---|
-| Host routing, auth, session, code redemption | ✅ |
-| Submission pipeline, rate limiting, timestamping | ✅ |
-| Hunt / CTF / Quiz graders | ✅ hunt + CTF verified end to end against live Cosmos |
-| Score ledger, leaderboard materializer, APIs | ✅ |
-| Code grader + judge subsystem | ⛔ **stubbed** — returns `pending`, nothing enqueued |
-| Event UIs | ⛔ placeholder pages |
-| Leaderboard refresh loop | ⛔ `materializeAll()` exists but nothing calls it on a timer |
+| Host routing, auth, session, code redemption | Done |
+| Submission pipeline, rate limiting, timestamping | Done |
+| Hunt / CTF / Quiz graders | Done: hunt + CTF verified end to end against live Cosmos |
+| Score ledger, leaderboard materializer, APIs | Done |
+| Code grader + judge subsystem | **Stubbed** — returns `pending`, nothing enqueued |
+| Event UIs | Placeholder pages |
+| Leaderboard refresh loop | Not wired: `materializeAll()` exists but nothing calls it on a timer |
 
 ### Known gaps worth naming
 
